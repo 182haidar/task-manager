@@ -44,7 +44,7 @@ function AddTaskForm({ addTask }) {
         onChange={(e) => setDeadline(e.target.value)}
         InputLabelProps={{shrink: true}}
         required
-        sx={{ minWidth: 150 }}
+        sx={{ minWidth: 180 }}
       />
       <TextField
        label="Description"
