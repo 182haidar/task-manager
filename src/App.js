@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useMemo } from 'react';
 import './App.css';
 import AddTaskForm from './components/AddTaskForm';
-import { Switch, FormControlLabel, Box} from '@mui/material';
+import { Switch, FormControlLabel, Box } from '@mui/material';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import ListView from './components/ListView';
 import CardView from './components/CardView';
 
@@ -10,6 +13,40 @@ function App() {
   const [tasks, setTasks] = useState([]);
   const [isCardView, setIsCardView] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+  const theme = useMemo(() =>
+    createTheme({
+      palette: {
+        mode: prefersDarkMode ? 'dark' : 'light',
+        ...(prefersDarkMode ? {
+          background: {
+            default: '#121212',   // Dark background
+            paper: '#1E1E1E',     // Card/List background in dark
+          },
+          text: {
+            primary: '#FFFFFF',
+            secondary: '#B0B0B0'
+          }
+        }
+      : {
+          background: {
+            default: '#f5f5f5',   // Soft light grey instead of pure white
+            paper: '#ffffff'      // Keep cards/lists white for contrast
+          },
+          text: {
+            primary: '#000000',
+            secondary: '#555555'
+          }
+        })
+  },
+}), [prefersDarkMode]);
+  const filteredTasks = tasks.filter(task => !task.completed);
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    const today = new Date();
+    const aDiff = Math.ceil((new Date(a.deadline) - today) / (1000 * 60 * 60 * 24));
+    const bDiff = Math.ceil((new Date(b.deadline) - today) / (1000 * 60 * 60 * 24));
+    return aDiff - bDiff;
+  });
   const toggleComplete = (id) => {
     const updatedTasks = tasks.map(task =>
       task.id === id ? { ...task, completed: !task.completed } : task
@@ -50,17 +87,9 @@ function App() {
     localStorage.setItem('tasks', JSON.stringify(tasks));
     }
   }, [tasks, isLoaded]);
-
-  const sortedTasks = [...tasks].sort((a, b) => {
-    const today = new Date();
-  
-    const aDiff = Math.ceil((new Date(a.deadline) - today) / (1000 * 60 * 60 * 24));
-    const bDiff = Math.ceil((new Date(b.deadline) - today) / (1000 * 60 * 60 * 24));
-  
-    return aDiff - bDiff;  // Closest deadlines first
-  });
-  
   return (
+   <ThemeProvider theme={theme}>
+    <CssBaseline />
     <div className="App">
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', padding: 2 }}>
         <FormControlLabel
@@ -82,9 +111,14 @@ function App() {
       {isCardView ? (
          <CardView tasks={sortedTasks} markAsDone={toggleComplete} deleteTask={deleteTask} postponeTask={postponeTask}/>
       ) : (
-         <ListView tasks={sortedTasks} toggleComplete={toggleComplete} deleteTask={deleteTask} />
+         <ListView 
+         tasks={sortedTasks} 
+         toggleComplete={toggleComplete} 
+         deleteTask={deleteTask} 
+         setTasks={setTasks}/>
       )}
     </div>
+    </ThemeProvider>
   );
 }
 

@@ -1,7 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, Typography, Grid, CircularProgress, Box } from '@mui/material';
+import Linkify from 'react-linkify';
 
-const getUrgencyColor = (deadline) => {
+const shortenLink = (href) => {
+  const maxLength = 40;
+  return href.length > maxLength 
+    ? href.slice(0, 30) + '...' 
+    : href;
+};
+
+const linkDecorator = (href, text, key) => (
+  <a href={href} key={key} target="_blank" rel="noopener noreferrer">
+    {shortenLink(href)}
+  </a>
+);
+
+const getFriendlyDeadline = (deadline) => {
+  const now = new Date();
+  const taskDate = new Date(deadline);
+  const diffMs = taskDate - now;
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+
+  if (diffHours < 0) return `OVERDUE by ${Math.abs(diffHours)} hours`;
+  if (diffHours < 24) return `Due in ${diffHours} hours`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  return `Due in ${diffDays} days`;
+};
+
+   
+
+function CardView({ tasks, markAsDone, deleteTask, postponeTask }) {
+  const [isHolding, setIsHolding] = useState(false);
+  const [holdAction, setHoldAction] = useState(null);  // 'done' | 'delete' | 'postpone'
+  const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
+
+  const currentTask = tasks[currentTaskIndex];
+  const holdDuration = 5000;  // 3 seconds
+  let holdTimer = null;
+
+  const getUrgencyColor = (deadline) => {
     const today = new Date();
     const taskDate = new Date(deadline);
     const diffDays = Math.ceil((taskDate - today) / (1000 * 60 * 60 * 24));
@@ -12,25 +50,6 @@ const getUrgencyColor = (deadline) => {
     return '#4caf50';                      // Green
   };
   
-  const getUrgencyLabel = (deadline) => {
-    const today = new Date();
-    const taskDate = new Date(deadline);
-    const diffDays = Math.ceil((taskDate - today) / (1000 * 60 * 60 * 24));
-  
-    if (diffDays <= 0) return 'OVERDUE';
-    if (diffDays <= 2) return 'Due Soon';
-    if (diffDays <= 5) return 'Upcoming';
-    return 'Plenty of Time';
-  };  
-
-function CardView({ tasks, markAsDone, deleteTask, postponeTask }) {
-  const [isHolding, setIsHolding] = useState(false);
-  const [holdAction, setHoldAction] = useState(null);  // 'done' | 'delete' | 'postpone'
-  const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
-
-  const currentTask = tasks[currentTaskIndex];
-  const holdDuration = 3000;  // 3 seconds
-  let holdTimer = null;
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -78,25 +97,31 @@ function CardView({ tasks, markAsDone, deleteTask, postponeTask }) {
   };
 
   if (!currentTask) {
-    return <Typography variant="h6" align="center" sx={{ mt: 4 }}>🎉 No prioritized tasks left!</Typography>;
+    return <Typography variant="h6" align="center" sx={{ mt: 4 }}>
+      🎉 You're all caught up! No tasks remaining.
+      </Typography>;
   }
 
   return (
     <Grid container justifyContent="center" sx={{ marginTop: 4 }}>
-      <Card sx={{ borderTop: `12px solid ${getUrgencyColor(currentTask.deadline)}`, minWidth: 300, marginBottom: 3 }}>
+      <Card sx={{ borderTop: `12px solid ${getUrgencyColor(currentTask.deadline)}`, backgroundColor: 'background.paper',minWidth: 300, marginBottom: 3 }}>
         <CardContent>
             <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: getUrgencyColor(currentTask.deadline) }}>
-            {getUrgencyLabel(currentTask.deadline)}
+            {getFriendlyDeadline(currentTask.deadline)}
             </Typography>
             <Typography variant="h5" gutterBottom>
             {currentTask.title}
             </Typography>
             <Typography color="text.secondary">
-            Category: {currentTask.category}
+            Due: {new Date(currentTask.deadline).toLocaleString()}
             </Typography>
-            <Typography color="text.secondary">
-            Due: {currentTask.deadline}
-            </Typography>
+            {currentTask.description && (
+              <Linkify componentDecorator={linkDecorator}>
+                <Typography variant="body2" sx={{ mt:2 , whiteSpace: 'pre-line', maxWidth: '400px',wordBreak: 'break-word' }}>
+                  {currentTask.description}
+                </Typography>
+              </Linkify>
+            )}
             {currentTask.completed && (
             <Typography color="primary">✔ Completed</Typography>
             )}

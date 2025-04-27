@@ -1,46 +1,127 @@
-import React from 'react';
-import { List, ListItem, ListItemText, Divider, Checkbox,IconButton } from '@mui/material';
+import React, { useState } from 'react';
+import Linkify from 'react-linkify';
+import { Typography,List, TextField, ListItem, ListItemText, Divider, Checkbox,IconButton, Box, Button} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 
+const getFriendlyDeadline = (deadline) => {
+  const now = new Date();
+  const taskDate = new Date(deadline);
+  const diffMs = taskDate - now;
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+
+  if (diffHours < 0) return `OVERDUE by ${Math.abs(diffHours)} hours`;
+  if (diffHours < 24) return `Due in ${diffHours} hours`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  return `Due in ${diffDays} days`;
+};
 const getUrgencyColor = (deadline) => {
-    const today = new Date();
-    const taskDate = new Date(deadline);
-    const diffDays = Math.ceil((taskDate - today) / (1000 * 60 * 60 * 24));
-  
-    if (diffDays <= 0) return '#f44336';
-    if (diffDays <= 2) return '#ff9800';
-    if (diffDays <= 5) return '#ffeb3b';
-    return '#4caf50';
+  const today = new Date();
+  const taskDate = new Date(deadline);
+  const diffDays = Math.ceil((taskDate - today) / (1000 * 60 * 60 * 24));
+
+  if (diffDays <= 0) return '#f44336';   // Red
+  if (diffDays <= 2) return '#ff9800';   // Orange
+  if (diffDays <= 5) return '#ffeb3b';   // Yellow
+  return '#4caf50';                      // Green
+};
+
+
+function ListView({ tasks, toggleComplete, deleteTask, setTasks }) {
+  const [expandedTaskId, setExpandedTaskId] = useState(null);
+  const [editingTaskId, setEditingTaskId] = useState(null);
+  const [tempDescription, setTempDescription] = useState('');
+  const handleToggleExpand = (id) => {
+    setExpandedTaskId(expandedTaskId === id ? null : id);
+  };
+  const handleEditClick = (task) => {
+    setEditingTaskId(task.id);
+    setTempDescription(task.description || '');
+  };
+  const handleSaveDescription = (taskId) => {
+    const updatedTasks = tasks.map(t =>
+      t.id === taskId ? { ...t, description: tempDescription } : t
+    );
+    setTasks(updatedTasks);
+    setEditingTaskId(null);
+  };
+  const shortenLink = (href) => {
+    const maxLength = 40;
+    return href.length > maxLength 
+      ? href.slice(0, 30) + '...' 
+      : href;
   };
   
-
-function ListView({ tasks, toggleComplete, deleteTask }) {
+  const linkDecorator = (href, text, key) => (
+    <a href={href} key={key} target="_blank" rel="noopener noreferrer">
+      {shortenLink(href)}
+    </a>
+  );
   return (
-    <List sx={{ width: '100%', maxWidth: 600, margin: 'auto' }}>
-      {tasks.length === 0 && <p>No tasks available.</p>}
+    <List sx={{ width: '100%', maxWidth: 1000, margin: 'auto',mt: 2}}>
+      {tasks.length === 0 && (
+      <Typography variant="h6" align="center" >
+        🎉 You're all caught up! No tasks remaining.
+      </Typography> 
+      )}
       {tasks.map((task) => (
         <React.Fragment key={task.id}>
           <ListItem
-            sx={{ borderLeft: `8px solid ${getUrgencyColor(task.deadline)}`  }}
+            sx={{borderLeft: `8px solid ${getUrgencyColor(task.deadline)}`, backgroundColor: 'background.paper', borderRadius: 1}}
              secondaryAction={
-                <IconButton edge="end" aria-label="delete" onClick={() => deleteTask(task.id)}>
-                    <DeleteIcon />
-                </IconButton>
+            <>
+              <IconButton onClick={() => handleToggleExpand(task.id)}>
+                {expandedTaskId === task.id ? '-' : '+'}
+              </IconButton>
+              <IconButton edge="end" aria-label="delete" onClick={() => deleteTask(task.id)}>
+                <DeleteIcon />
+              </IconButton>
+            </>
             }
-           >
+            >
             <Checkbox
               checked={task.completed}
               onChange={() => toggleComplete(task.id)}
             />
             <ListItemText
               primary={
-                <span style={{ textDecoration: task.completed ? 'line-through' : 'none', color: task.completed ? 'grey' : 'black' }}>
+                <span style={{ textDecoration: task.completed ? 'line-through' : 'none', color: task.completed ? 'grey' : 'inherit' }}>
                   {task.title}
                 </span>
               }
-              secondary={`Category: ${task.category} | Due: ${task.deadline}`}
+              secondary={getFriendlyDeadline(task.deadline)}
             />
           </ListItem>
+          {/* Show Description When Expanded */}
+          {expandedTaskId === task.id && (
+  <Box sx={{ pl: 6, pr: 2, pb: 1 }}>
+    {editingTaskId === task.id ? (
+      <>
+        <TextField
+          multiline
+          fullWidth
+          value={tempDescription}
+          onChange={(e) => setTempDescription(e.target.value)}
+          sx={{ mb: 1 }}
+        />
+        <Button variant="contained" size="small" onClick={() => handleSaveDescription(task.id)}>
+          Save
+        </Button>
+      </>
+    ) : (
+      <>
+        <Linkify componentDecorator={linkDecorator}>
+          <Typography variant="body2" sx={{ whiteSpace: 'pre-line', mt:1}}>
+            {task.description || "No description yet. Click Edit to add one."}
+          </Typography>
+        </Linkify>
+        <Button variant="outlined" size="small" onClick={() => handleEditClick(task)} sx={{ mt: 1 }}>
+          Edit
+        </Button>
+      </>
+    )}
+          </Box>
+          )}
           <Divider />
         </React.Fragment>
       ))}

@@ -1,6 +1,9 @@
-.App {
-  text-align: center;
-}
+ .App {
+    text-align: center;
+    min-height: 100vh;
+    background-color: transparent;  /* Let MUI handle it */
+  }
+  
 
 .App-logo {
   height: 40vmin;
