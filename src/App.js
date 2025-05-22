@@ -1,3 +1,5 @@
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { db } from './firebase';
 import React, { useState, useEffect, useMemo } from "react";
 import "./App.css";
 import AddTaskForm from "./components/AddTaskForm";
@@ -56,14 +58,34 @@ function App() {
     );
     return aDiff - bDiff;
   });
-  const toggleComplete = (id) => {
-    const updatedTasks = tasks.map((task) =>
-      task.id === id ? { ...task, completed: !task.completed } : task
-    );
-    const changedTask = tasks.find((task) => task.id === id);
-    setTasks(updatedTasks);
-    setLastAction({ type: "toggle", task: changedTask });
-    setSnackbarOpen(true);
+  const toggleComplete = async (id) => {
+  const updatedTasks = tasks.map(task =>
+    task.id === id ? { ...task, completed: !task.completed } : task
+  );
+  setTasks(updatedTasks);
+
+  const changedTask = updatedTasks.find(task => task.id === id);
+  const privateKey = localStorage.getItem('privateKey') || 'demo-key';
+  const taskRef = doc(db, 'tasks', privateKey, 'userTasks', id.toString());
+
+  try {
+    await updateDoc(taskRef, { completed: changedTask.completed });
+  } catch (error) {
+    console.error('Error updating completion status:', error);
+  }
+};
+
+  const addTaskToFirestore = async (task) => {
+    const privateKey = localStorage.getItem('privateKey') || 'demo-key';
+    const userTasksRef = collection(doc(db, 'tasks', privateKey), 'userTasks');
+
+    const docRef = await addDoc(userTasksRef, task);
+    return { ...task, id: docRef.id };
+  };
+  
+  const addTask = async (task) => {
+    const newTask = await addTaskToFirestore(task);
+    setTasks(prev => [...prev, newTask]);
   };
 
   const handleUndo = () => {
@@ -85,32 +107,59 @@ function App() {
     setLastAction(null);
   };
 
-  const deleteTask = (id) => {
-    const taskToDelete = tasks.find((task) => task.id === id);
-    setTasks(tasks.filter((task) => task.id !== id));
-    setLastAction({ type: "delete", task: taskToDelete });
-    setSnackbarOpen(true);
-  };
-  const postponeTask = (id) => {
-    const updatedTasks = tasks.map((task) => {
-      if (task.id === id) {
-        const newDate = new Date(task.deadline);
-        newDate.setDate(newDate.getDate() + 2); // Postpone by 2 days
-        return { ...task, deadline: newDate.toISOString().split("T")[0] }; // Format as YYYY-MM-DD
-      }
-      return task;
-    });
-    setTasks(updatedTasks);
-  };
+  const deleteTask = async (id) => {
+  const privateKey = localStorage.getItem('privateKey') || 'demo-key';
+  const taskRef = doc(db, 'tasks', privateKey, 'userTasks', id.toString());
+
+  try {
+    await deleteDoc(taskRef);
+    setTasks(tasks.filter(task => task.id !== id));
+  } catch (error) {
+    console.error('Error deleting task:', error);
+  }
+};
+
+  const postponeTask = async (id) => {
+  const updatedTasks = tasks.map(task => {
+    if (task.id === id) {
+      const newDate = new Date(task.deadline);
+      newDate.setDate(newDate.getDate() + 2); // Add 2 days
+      return { ...task, deadline: newDate.toISOString() };
+    }
+    return task;
+  });
+
+  setTasks(updatedTasks);
+
+  const updatedTask = updatedTasks.find(task => task.id === id);
+  const privateKey = localStorage.getItem('privateKey') || 'demo-key';
+  const taskRef = doc(db, 'tasks', privateKey, 'userTasks', id.toString());
+
+  try {
+    await updateDoc(taskRef, { deadline: updatedTask.deadline });
+  } catch (error) {
+    console.error('Error postponing task:', error);
+  }
+};
+
 
   // Load tasks from LocalStorage on first render
   useEffect(() => {
-    const savedTasks = JSON.parse(localStorage.getItem("tasks"));
-    if (Array.isArray(savedTasks)) {
-      setTasks(savedTasks);
+  const privateKey = localStorage.getItem('privateKey') || 'demo-key';
+  const loadTasksFromFirestore = async () => {
+    try {
+      const userTasksRef = collection(doc(db, 'tasks', privateKey), 'userTasks');
+      const querySnapshot = await getDocs(userTasksRef);
+      const fetchedTasks = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setTasks(fetchedTasks);
+    } catch (error) {
+      console.error('Error loading tasks:', error);
     }
-    setIsLoaded(true);
-  }, []);
+  };
+
+  loadTasksFromFirestore();
+  setIsLoaded(true);
+}, []);
 
   // Save tasks to LocalStorage whenever tasks change
   useEffect(() => {
@@ -137,8 +186,7 @@ function App() {
         </Box>
 
         <h1>Task Manager</h1>
-        <AddTaskForm addTask={(task) => setTasks([...tasks, { ...task, description: task.description || "" }])} />
-
+        <AddTaskForm addTask={addTask} />
         {isCardView ? (
           <CardView
             tasks={sortedTasks}

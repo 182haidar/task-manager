@@ -78,7 +78,6 @@ function CardView({ tasks, markAsDone, deleteTask, postponeTask }) {
             width: "90vw",
             borderTop: `12px solid ${getUrgencyColor(currentTask.deadline)}`,
             backgroundColor: "background.paper",
-            width: "100%",
             maxWidth: 500,
           }}
         >
