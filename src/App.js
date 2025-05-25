@@ -39,12 +39,13 @@ function App() {
     const generatedKey = Math.random().toString(36).substring(2, 10); // e.g., "x9a4tq7p"
     localStorage.setItem("privateKey", generatedKey);
   }
+  const isMobile = useMediaQuery('(max-width:600px)');
   const privateKey = localStorage.getItem("privateKey");
   const [showQR, setShowQR] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [lastAction, setLastAction] = useState(null);
   const [tasks, setTasks] = useState([]);
-  const [isCardView, setIsCardView] = useState(false);
+  const [isCardView, setIsCardView] = useState(isMobile);
   const [isLoaded, setIsLoaded] = useState(false);
   const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
   const theme = useMemo(
