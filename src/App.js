@@ -11,6 +11,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import Typography from "@mui/material/Typography";
 import { QRCodeCanvas } from "qrcode.react";
 import "./App.css";
+import KeyViewer from "./components/KeyViewer";
 import AddTaskForm from "./components/AddTaskForm";
 import { Switch, FormControlLabel, Box, Snackbar, Button } from "@mui/material";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
@@ -30,7 +31,6 @@ function App() {
 
   if (keyFromUrl && keyFromUrl !== localKey) {
     localStorage.setItem("privateKey", keyFromUrl);
-
     // Optional: Clean up URL
     const cleanUrl = new URL(window.location);
     cleanUrl.searchParams.delete("key");
@@ -203,6 +203,13 @@ function App() {
       localStorage.setItem("tasks", JSON.stringify(tasks));
     }
   }, [tasks, isLoaded]);
+
+  const handleResetKey = () => {
+  const newKey = Math.random().toString(36).substring(2, 10); // short and readable
+  localStorage.setItem("privateKey", newKey);
+  window.location.reload(); // refresh to load the new, empty Firestore path
+};
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -217,8 +224,8 @@ function App() {
               />
             }
             label={isCardView ? "Card View" : "List View"}
-            labelPlacement="start"
           />
+          <KeyViewer onReset={handleResetKey} />
         </Box>
 
         <h1>Task Manager</h1>
