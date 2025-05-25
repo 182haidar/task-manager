@@ -7,13 +7,17 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import React, { useState, useEffect, useMemo} from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Typography from "@mui/material/Typography";
+import { QRCodeCanvas } from "qrcode.react";
 import "./App.css";
 import AddTaskForm from "./components/AddTaskForm";
 import { Switch, FormControlLabel, Box, Snackbar, Button } from "@mui/material";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
+import QrCode2Icon from "@mui/icons-material/QrCode2";
+import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import ListView from "./components/ListView";
 import CardView from "./components/CardView";
@@ -35,8 +39,8 @@ function App() {
     const generatedKey = Math.random().toString(36).substring(2, 10); // e.g., "x9a4tq7p"
     localStorage.setItem("privateKey", generatedKey);
   }
-
   const privateKey = localStorage.getItem("privateKey");
+  const [showQR, setShowQR] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [lastAction, setLastAction] = useState(null);
   const [tasks, setTasks] = useState([]);
@@ -217,8 +221,18 @@ function App() {
         </Box>
 
         <h1>Task Manager</h1>
-        <Typography variant="body2" align="center" sx={{ mt:-3,mb: 3 }}>
+        <Typography variant="body2" align="center" sx={{ mt: -3, mb: 3 }}>
           🔑 Your Sync Key: <code>{privateKey}</code>
+          <Tooltip title={showQR ? "Hide QR" : "Show QR"}>
+            <IconButton
+              onClick={() => setShowQR((prev) => !prev)}
+              color="primary"
+              size="small"
+              sx={{ ml: 1 }}
+            >
+              <QrCode2Icon />
+            </IconButton>
+          </Tooltip>
         </Typography>
         <AddTaskForm addTask={addTask} />
         {isCardView ? (
@@ -247,6 +261,36 @@ function App() {
             </Button>
           }
         />
+        {showQR && (
+          <Box
+            sx={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              zIndex: 9999,
+              width: "100vw",
+              height: "100vh",
+              backgroundColor: "rgba(0,0,0,0.7)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onClick={() => setShowQR(false)} // tap anywhere to close
+          >
+            <QRCodeCanvas
+              value={`${window.location.origin}/?key=${privateKey}`}
+              size={220}
+              bgColor="#ffffff"
+              fgColor="#000000"
+              level="H"
+              includeMargin={true}
+            />
+            <Typography variant="body2" color="white" sx={{ mt: 2 }}>
+              Tap anywhere to hide QR
+            </Typography>
+          </Box>
+        )}
       </div>
     </ThemeProvider>
   );

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { TextField, Button, Box } from "@mui/material";
 //import { Description } from '@mui/icons-material';
 //import { collection, addDoc } from 'firebase/firestore';
@@ -8,6 +9,7 @@ function AddTaskForm({ addTask }) {
   const [title, setTitle] = useState("");
   const [deadline, setDeadline] = useState("");
   const [description, setDescription] = useState("");
+  const isMobile = useMediaQuery('(max-width:600px)');
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -31,11 +33,13 @@ function AddTaskForm({ addTask }) {
       onSubmit={handleSubmit}
       sx={{
         display: "flex",
-        flexDirection: "row",
+        flexDirection: isMobile ? "column" : "row",
         flexWrap: "wrap",
+        alignItems: 'center',
         justifyContent: "center",
         gap: 2,
         mb: 3,
+        px: 1
       }}
     >
       <TextField
@@ -43,7 +47,11 @@ function AddTaskForm({ addTask }) {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         required
-        sx={{ minWidth: 150 }}
+        sx={{ 
+          flexGrow: 1,
+          minWidth: isMobile ? '100%' : 200,
+          maxWidth: isMobile ? '100%' : 250,
+        }}
       />
       <TextField
         label="Deadline"
@@ -52,7 +60,11 @@ function AddTaskForm({ addTask }) {
         onChange={(e) => setDeadline(e.target.value)}
         InputLabelProps={{ shrink: true }}
         required
-        sx={{ minWidth: 180 }}
+        sx={{ 
+          flexGrow: 1,
+          minWidth: isMobile ? '100%' : 175,
+          maxWidth: isMobile ? '100%' : 200,
+        }}
       />
       <TextField
         label="Description"
@@ -61,7 +73,11 @@ function AddTaskForm({ addTask }) {
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Optional notes or links..."
-        sx={{ minWidth: 250 }}
+        sx={{ 
+          flexGrow: 1,
+          minWidth: isMobile ? '100%' : 175,
+          maxWidth: isMobile ? '100%' : 250,
+        }}
       />
       <Button type="submit" variant="contained">
         Add Task
