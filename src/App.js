@@ -7,7 +7,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo,Typography } from "react";
 import "./App.css";
 import AddTaskForm from "./components/AddTaskForm";
 import { Switch, FormControlLabel, Box, Snackbar, Button } from "@mui/material";
@@ -35,6 +35,7 @@ function App() {
     localStorage.setItem("privateKey", generatedKey);
   }
 
+  const privateKey = localStorage.getItem("privateKey");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [lastAction, setLastAction] = useState(null);
   const [tasks, setTasks] = useState([]);
@@ -215,6 +216,15 @@ function App() {
         </Box>
 
         <h1>Task Manager</h1>
+        <Typography variant="body2" align="center" sx={{ mt: -1, mb: 2 }}>
+          🔑 Your Sync Key: <code>{privateKey}</code>
+          <br />
+          Share this link to sync across devices:
+          <br />
+          <a href={`?key=${privateKey}`}>
+            {window.location.origin + `/?key=${privateKey}`}
+          </a>
+        </Typography>
         <AddTaskForm addTask={addTask} />
         {isCardView ? (
           <CardView
