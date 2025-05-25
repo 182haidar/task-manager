@@ -1,5 +1,6 @@
 import {
   collection,
+  setDoc,
   getDocs,
   addDoc,
   doc,
@@ -90,6 +91,13 @@ function App() {
     return aDiff - bDiff;
   });
   const toggleComplete = async (id) => {
+    const originalTask = tasks.find(task => task.id === id);
+  setLastAction({
+    type: "toggle",
+    task: { ...originalTask } // Clone to preserve pre-change state
+  });
+  setSnackbarOpen(true);
+
     const updatedTasks = tasks.map((task) =>
       task.id === id ? { ...task, completed: !task.completed } : task
     );
@@ -119,36 +127,69 @@ function App() {
     setTasks((prev) => [...prev, newTask]);
   };
 
-  const handleUndo = () => {
-    if (!lastAction) return;
+  const handleUndo = async () => {
+  if (!lastAction) return;
 
-    if (lastAction.type === "delete") {
-      setTasks((prev) => [...prev, lastAction.task]);
-    } else if (lastAction.type === "toggle") {
-      setTasks((prev) =>
-        prev.map((task) =>
-          task.id === lastAction.task.id
-            ? { ...task, completed: !lastAction.task.completed }
-            : task
-        )
-      );
+  const privateKey = localStorage.getItem("privateKey") || "demo-key";
+  const taskRef = doc(db, "tasks", privateKey, "userTasks", lastAction.task.id.toString());
+
+  if (lastAction.type === "delete") {
+    // 1. Restore to Firestore
+    try {
+      await setDoc(taskRef, lastAction.task); // re-create the deleted task
+    } catch (err) {
+      console.error("Failed to restore task to Firestore:", err);
     }
 
-    setSnackbarOpen(false);
-    setLastAction(null);
-  };
+    // 2. Restore to local UI
+    setTasks((prev) => [...prev, lastAction.task]);
+  }
+
+  if (lastAction.type === "toggle") {
+    // 1. Flip completion status
+    const toggled = {
+      ...lastAction.task,
+      completed: !lastAction.task.completed,
+    };
+
+    // 2. Update Firestore
+    try {
+      await updateDoc(taskRef, { completed: toggled.completed });
+    } catch (err) {
+      console.error("Failed to undo toggle in Firestore:", err);
+    }
+
+    // 3. Update UI
+    setTasks((prev) =>
+      prev.map((t) => (t.id === toggled.id ? toggled : t))
+    );
+  }
+
+  setSnackbarOpen(false);
+  setLastAction(null);
+};
+
 
   const deleteTask = async (id) => {
-    const privateKey = localStorage.getItem("privateKey") || "demo-key";
-    const taskRef = doc(db, "tasks", privateKey, "userTasks", id.toString());
+  const taskToDelete = tasks.find((t) => t.id === id);
+  if (!taskToDelete) return;
 
-    try {
-      await deleteDoc(taskRef);
-      setTasks(tasks.filter((task) => task.id !== id));
-    } catch (error) {
-      console.error("Error deleting task:", error);
-    }
-  };
+  // 🔁 1. Store lastAction for undo
+  setLastAction({ type: "delete", task: { ...taskToDelete } });
+  setSnackbarOpen(true);
+
+  // 🗑 2. Delete from Firestore
+  const privateKey = localStorage.getItem("privateKey") || "demo-key";
+  const taskRef = doc(db, "tasks", privateKey, "userTasks", id.toString());
+
+  try {
+    await deleteDoc(taskRef);
+    setTasks(tasks.filter((task) => task.id !== id));
+  } catch (error) {
+    console.error("Error deleting task:", error);
+  }
+};
+
 
   const postponeTask = async (id) => {
     const updatedTasks = tasks.map((task) => {
