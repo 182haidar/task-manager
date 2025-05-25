@@ -234,8 +234,8 @@ function App() {
             </IconButton>
           </Tooltip>
         </Typography>
-        <AddTaskForm addTask={addTask} />
-        {isCardView ? (
+        {!isCardView && <AddTaskForm addTask={addTask} />}
+        {isCardView ? ( 
           <CardView
             tasks={sortedTasks}
             markAsDone={toggleComplete}
