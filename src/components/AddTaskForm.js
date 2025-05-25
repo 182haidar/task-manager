@@ -1,38 +1,42 @@
-import React, { useState } from 'react';
-import { TextField, Button, Box } from '@mui/material';
+import React, { useState } from "react";
+import { TextField, Button, Box } from "@mui/material";
 //import { Description } from '@mui/icons-material';
 //import { collection, addDoc } from 'firebase/firestore';
 //import { db } from './firebase';
 
-
-
 function AddTaskForm({ addTask }) {
-  const [title, setTitle] = useState('');
-  const [deadline, setDeadline] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState("");
+  const [deadline, setDeadline] = useState("");
+  const [description, setDescription] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!title || !deadline) return;
 
     addTask({
-      id: Date.now(),
       title,
       deadline,
       description,
       completed: false,
     });
 
-    setTitle('');
-    setDeadline('');
-    setDescription('');
+    setTitle("");
+    setDeadline("");
+    setDescription("");
   };
 
   return (
     <Box
-    component="form"
-    onSubmit={handleSubmit}
-    sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 2, mb: 3 }}
+      component="form"
+      onSubmit={handleSubmit}
+      sx={{
+        display: "flex",
+        flexDirection: "row",
+        flexWrap: "wrap",
+        justifyContent: "center",
+        gap: 2,
+        mb: 3,
+      }}
     >
       <TextField
         label="Task Title"
@@ -46,20 +50,22 @@ function AddTaskForm({ addTask }) {
         type="datetime-local"
         value={deadline}
         onChange={(e) => setDeadline(e.target.value)}
-        InputLabelProps={{shrink: true}}
+        InputLabelProps={{ shrink: true }}
         required
         sx={{ minWidth: 180 }}
       />
       <TextField
-       label="Description"
-       multiline
-       rows={1}
-       value={description}
-       onChange={(e) => setDescription(e.target.value)}
-       placeholder="Optional notes or links..."
-       sx={{ minWidth: 250 }}
+        label="Description"
+        multiline
+        rows={1}
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder="Optional notes or links..."
+        sx={{ minWidth: 250 }}
       />
-      <Button type="submit" variant='contained'>Add Task</Button>
+      <Button type="submit" variant="contained">
+        Add Task
+      </Button>
     </Box>
   );
 }
